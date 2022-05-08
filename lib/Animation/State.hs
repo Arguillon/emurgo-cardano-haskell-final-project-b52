@@ -12,6 +12,10 @@ data Direction
   | Negative
   | Neutral
 
+data UserInput
+  = Left
+  | Right
+
 data Brick =
   Brick
     { brickPosition :: (Int, Int)
@@ -38,7 +42,7 @@ data St =
 
 -- TODO add random brick generation
 defaultBrickList :: [Brick]
-defaultBrickList = [Brick (5, 5) 1, Brick (6, 5) 1, Brick (6, 6) 1]
+defaultBrickList = [Brick (5, 5) 1, Brick (6, 5) 2, Brick (6, 6) 3]
 
 defaultSt :: St
 defaultSt = St (0, 0) (Neutral, Neutral) defaultBrickList

@@ -7,6 +7,7 @@ import           Control.Monad.Trans.State.Strict (get, put)
 import           Animation.Env                    (Env (..))
 import           Animation.State                  (Brick (..), St (..))
 import           Animation.Type                   (Animation)
+import           Data.Char                        (intToDigit)
 
 render :: Animation Env St ()
 render = do
@@ -22,14 +23,14 @@ renderVal = do
 renderInternal :: Env -> St -> String
 renderInternal env st = makeBox (size env) (ballPosition st) (bricks st)
 
-makeLine :: Char -> Char -> Int -> Maybe Int -> [Int] -> String
-makeLine endChar innerChar i mb brickXPositions =
-  let positions = [0 .. i]
+makeLine :: Char -> Char -> Int -> Maybe Int -> [Brick] -> String
+makeLine endChar innerChar numCols mBrickXPosition bricks =
+  let positions = [0 .. numCols]
       renderBrick x =
-        case mb of
+        case mBrickXPosition of
           Nothing ->
             if x `elem` brickXPositions
-              then '='
+              then findBrickLife x
               else innerChar
           Just b ->
             if x == b
@@ -38,19 +39,24 @@ makeLine endChar innerChar i mb brickXPositions =
                      then '='
                      else innerChar
    in [endChar] ++ map renderBrick positions ++ [endChar]
+  where
+    brickXPositions = map (fst . brickPosition) bricks
+    findBrickLife z =
+      intToDigit $
+      head $
+      map (life) $ filter (\brick -> fst (brickPosition brick) == z) bricks
 
 makeBox :: (Int, Int) -> (Int, Int) -> [Brick] -> String
-makeBox (c, r) (x, y) bricks =
+makeBox (numRows, numCols) (ballX, ballY) bricks =
   unlines
-    ([makeLine '-' '-' c Nothing []] ++
-     mappedPositions ++ [makeLine '-' '-' c Nothing []])
+    ([makeLine '-' '-' numRows Nothing []] ++
+     mappedPositions ++ [makeLine '-' '-' numRows Nothing []])
   where
-    positions = [0 .. r]
+    positions = [0 .. numCols]
     mappedPositions = map lineMaker positions
-    lineMaker x =
+    lineMaker y =
       let brickPositions =
-            map (fst . brickPosition) $
-            filter (\brick -> snd (brickPosition brick) == x) bricks
-       in if x == y
-            then makeLine '|' ' ' c (Just x) brickPositions
-            else makeLine '|' ' ' c Nothing brickPositions
+            filter (\brick -> snd (brickPosition brick) == y) bricks
+       in if y == ballY
+            then makeLine '|' ' ' numRows (Just ballX) brickPositions
+            else makeLine '|' ' ' numRows Nothing brickPositions
