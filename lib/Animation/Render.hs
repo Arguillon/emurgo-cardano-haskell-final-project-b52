@@ -9,6 +9,11 @@ import           Animation.State                  (Brick (..), St (..))
 import           Animation.Type                   (Animation)
 import           Data.Char                        (intToDigit)
 
+data Object
+  = Ball Int
+            -- | Brick Int
+  | Base Int Int
+
 render :: Animation Env St ()
 render = do
   val <- renderVal
@@ -21,42 +26,87 @@ renderVal = do
   return (renderInternal env st)
 
 renderInternal :: Env -> St -> String
-renderInternal env st = makeBox (size env) (ballPosition st) (bricks st)
+renderInternal env st =
+  makeBox
+    (size env)
+    (baselength env)
+    (bXPosition st)
+    (position st)
+    (bricks st)
+    (numberDeaths st)
 
-makeLine :: Char -> Char -> Int -> Maybe Int -> [Brick] -> String
-makeLine endChar innerChar numCols mBrickXPosition bricks =
-  let positions = [0 .. numCols]
-      renderBrick x =
-        case mBrickXPosition of
+makeLine ::
+     Char -> Char -> Int -> Maybe Object -> Maybe Object -> [Brick] -> String
+makeLine endChar innerChar i mb mba bricks =
+  let positions = [0 .. i]
+      renderPixel x =
+        case mb of
           Nothing ->
-            if x `elem` brickXPositions
-              then findBrickLife x
-              else innerChar
-          Just b ->
-            if x == b
-              then 'O'
-              else if x `elem` brickXPositions
-                     then '='
-                     else innerChar
-   in [endChar] ++ map renderBrick positions ++ [endChar]
+            case mba of
+              Nothing ->
+                if x `elem` brickXPositions
+                  then findBrickLife x
+                  else innerChar
+              Just (Base bl ba) ->
+                if x `elem` [ba .. (ba + bl)]
+                  then ':'
+                  else innerChar
+          Just (Ball b) ->
+            case mba of
+              Nothing ->
+                if x == b
+                  then 'O'
+                  else if x `elem` brickXPositions
+                         then findBrickLife x
+                         else innerChar
+              Just (Base bl ba) ->
+                if x `elem` [ba .. (ba + bl)]
+                  then 'O'
+                  else if x `elem` [ba .. (ba + bl)]
+                         then ':'
+                         else innerChar
+   in [endChar] ++ map renderPixel positions ++ [endChar]
   where
     brickXPositions = map (fst . brickPosition) bricks
     findBrickLife z =
       intToDigit $
-      head $
-      map (life) $ filter (\brick -> fst (brickPosition brick) == z) bricks
+      head $ map (life) $ filter ((==) z . fst . brickPosition) bricks
 
-makeBox :: (Int, Int) -> (Int, Int) -> [Brick] -> String
-makeBox (numRows, numCols) (ballX, ballY) bricks =
+makeBox :: (Int, Int) -> Int -> Int -> (Int, Int) -> [Brick] -> Int -> String
+makeBox (numRows, numCols) baseL baseX (ballX, ballY) bricks nbDeaths =
   unlines
-    ([makeLine '-' '-' numRows Nothing []] ++
-     mappedPositions ++ [makeLine '-' '-' numRows Nothing []])
+    ([makeLine '-' '-' numRows Nothing Nothing []] ++
+     mappedPositions ++
+     [makeLine '-' '-' numRows Nothing Nothing []] ++
+     [ "BaseX: " ++
+       show (baseX + div baseL 2) ++
+       " | Ball: (" ++
+       show ballX ++
+       "," ++
+       show ballY ++
+       ") | BallOverBase: " ++
+       show (ballX >= baseX && (ballX <= (baseX + baseL))) ++
+       " | Number of deaths: " ++ show nbDeaths
+     ])
   where
     positions = [0 .. numCols]
     mappedPositions = map lineMaker positions
     lineMaker y =
-      let brickPositions =
-            filter (\brick -> snd (brickPosition brick) == y) bricks
+      let brickPositions = filter ((==) y . snd . brickPosition) bricks
        in if y == ballY
-            then makeLine '|' ' ' numRows (Just ballX) brickPositions
-            else makeLine '|' ' ' numRows Nothing brickPositions
+            then makeLine
+                   '|'
+                   ' '
+                   numRows
+                   (Just (Ball ballX))
+                   Nothing
+                   brickPositions
+            else if y == numCols - 1
+                   then makeLine
+                          '|'
+                          ' '
+                          numRows
+                          Nothing
+                          (Just (Base baseL baseX))
+                          brickPositions
+                   else makeLine '|' ' ' numRows Nothing Nothing brickPositions

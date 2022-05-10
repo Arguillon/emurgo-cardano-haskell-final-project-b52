@@ -35,17 +35,19 @@ directionToMultiplier Neutral  = 0
 
 data St =
   St
-    { ballPosition  :: (Int, Int)
-    , ballDirection :: (Direction, Direction)
-    , bricks        :: [Brick]
+    { position     :: (Int, Int)
+    , direction    :: (Direction, Direction)
+    , bXPosition   :: Int
+    , baseMovement :: Direction
+    , bricks       :: [Brick]
+    , numberDeaths :: Int
     }
 
--- TODO add random brick generation
 defaultBrickList :: [Brick]
 defaultBrickList = [Brick (5, 5) 1, Brick (6, 5) 2, Brick (6, 6) 3]
 
 defaultSt :: St
-defaultSt = St (0, 0) (Neutral, Neutral) defaultBrickList
+defaultSt = St (0, 0) (Neutral, Neutral) 0 Neutral defaultBrickList 0
 
 next :: Animation Env St ()
 next = do
@@ -54,16 +56,30 @@ next = do
   lift (put (nextInternal env prevSt))
 
 nextInternal :: Env -> St -> St
-nextInternal (Env (width, height) velocity) (St (prevX, prevY) (prevXDir, prevYDir) _) =
+nextInternal (Env (width, height) velocity baselength) (St (prevX, prevY) (prevXDir, prevYDir) prevBXPos prevMov prevBricks prevNbDeath) =
   St
-    { ballPosition = (newX, newY)
-    , ballDirection = (newXDir, newYDir)
-    , bricks = defaultBricks
+    { position = (newX, newY)
+    , direction = (newXDir, newYDir)
+    , bXPosition = newBXPos
+    , baseMovement = newMov
+    , bricks = newBricks
+    , numberDeaths = newNbDeath
     }
   where
-    defaultBricks = [Brick (5, 5) 1]
+    ballInBottom =
+      if prevY == height
+        then 1
+        else 0
+    newNbDeath = prevNbDeath + ballInBottom
     newXUnbounded = prevX + directionToMultiplier prevXDir * velocity
     newYUnbounded = prevY + directionToMultiplier prevYDir * velocity
+    baseCollision = newBXPos <= newX && ((newBXPos + baselength) >= newX)
+    brickCollisionY =
+      elem (newX, newYUnbounded + directionToMultiplier prevYDir) $
+      map brickPosition prevBricks
+    brickCollisionX =
+      elem (newXUnbounded + directionToMultiplier prevXDir, newY) $
+      map brickPosition prevBricks
     newX =
       case prevXDir of
         Neutral  -> newXUnbounded
@@ -78,21 +94,65 @@ nextInternal (Env (width, height) velocity) (St (prevX, prevY) (prevXDir, prevYD
       case prevXDir of
         Neutral -> Neutral
         Positive ->
-          if newXUnbounded > width
+          if newXUnbounded >= width || brickCollisionX
             then Negative
             else Positive
         Negative ->
-          if newXUnbounded < 0
+          if newXUnbounded <= 0 || brickCollisionX
             then Positive
             else Negative
     newYDir =
       case prevYDir of
         Neutral -> Neutral
         Positive ->
-          if newYUnbounded > height
-            then Negative
-            else Positive
+          if baseCollision
+            then if newYUnbounded >= (height - 2)
+                   then Negative
+                   else Positive
+            else if (newYUnbounded >= height) || brickCollisionY
+                   then Negative
+                   else Positive
         Negative ->
-          if newYUnbounded < 0
+          if newYUnbounded <= 0 || brickCollisionY
             then Positive
             else Negative
+    newBXPos =
+      case prevMov of
+        Neutral  -> prevBXPos
+        Positive -> prevBXPos + 1
+        Negative -> prevBXPos - 1
+    newMov =
+      case prevMov of
+        Neutral -> Neutral
+        Positive ->
+          if (prevBXPos + baselength) < (width - 1)
+            then Positive
+            else Negative
+        Negative ->
+          if prevBXPos > 1
+            then Negative
+            else Positive
+    newBricks
+      | brickCollisionY =
+        let filterCond =
+              (==) (newX, newYUnbounded + directionToMultiplier prevYDir) .
+              brickPosition
+            target = head $ filter filterCond prevBricks
+            brickTail =
+              filter ((/=) (brickPosition target) . brickPosition) prevBricks
+            brickHurt = Brick (brickPosition target) (life target - 1)
+         in if life target > 0
+              then brickHurt : brickTail
+              else brickTail
+      | brickCollisionX =
+        let filterCond =
+              (==) (newXUnbounded + directionToMultiplier prevXDir, newY) .
+              brickPosition
+            target = head $ filter filterCond prevBricks
+            brickTail =
+              filter ((/=) (brickPosition target) . brickPosition) prevBricks
+            brickHurt = Brick (brickPosition target) (life target - 1)
+         in if life target > 0
+              then brickHurt : brickTail
+              else brickTail
+      | otherwise = prevBricks

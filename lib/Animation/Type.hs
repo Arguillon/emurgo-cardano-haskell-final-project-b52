@@ -1,7 +1,7 @@
 module Animation.Type where
 
-import Control.Monad.Trans.Reader (ReaderT(..))
-import Control.Monad.Trans.State.Strict (StateT(..), evalStateT)
+import           Control.Monad.Trans.Reader       (ReaderT (..))
+import           Control.Monad.Trans.State.Strict (StateT (..), evalStateT)
 
 type Animation env st a = ReaderT env (StateT st IO) a
 

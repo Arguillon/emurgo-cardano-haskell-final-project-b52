@@ -2,9 +2,9 @@ module Main where
 
 import           Animation                        (Animation, Direction (..),
                                                    Env (..), St (..),
-                                                   defaultEnv, defaultSt,
-                                                   directionFromInt, next,
-                                                   render, runAnimation)
+                                                   defaultBrickList, defaultEnv,
+                                                   defaultSt, directionFromInt,
+                                                   next, render, runAnimation)
 
 import           Control.Concurrent               (threadDelay)
 import           System.Random                    (randomRIO)
@@ -15,18 +15,27 @@ import           Control.Monad.Trans.State.Strict (get, put)
 
 putInitialState :: Animation Env St ()
 putInitialState = do
-  (Env (width, height) _) <- ask
+  (Env (width, height) _ baselength) <- ask
   posX <- lift $ lift $ randomRIO (0, width)
   posY <- lift $ lift $ randomRIO (0, height)
-  dirX <- lift $ lift $ fmap directionFromInt $ randomRIO (0, 2)
-  dirY <- lift $ lift $ fmap directionFromInt $ randomRIO (0, 2)
-  lift $ put defaultSt
+  dirX <- lift $ lift $ fmap directionFromInt $ randomRIO (1, 2)
+  dirY <- lift $ lift $ fmap directionFromInt $ randomRIO (1, 2)
+  lift $
+    put $
+    St
+      (div width 2, div height 2)
+      (Positive, Positive)
+      (div (width - baselength) 3)
+      Negative
+      defaultBrickList
+      0
 
 animate :: Animation Env St ()
-animate = render
-  --next
-  --lift $ lift $ threadDelay 100000
-  --animate
+animate = do
+  render
+  next
+  lift $ lift $ threadDelay 50000
+  animate
 
 --  render
 mainAnimation :: Animation Env St ()
