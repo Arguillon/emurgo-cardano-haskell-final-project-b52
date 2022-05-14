@@ -7,3 +7,16 @@ type Animation env st a = ReaderT env (StateT st IO) a
 
 runAnimation :: env -> st -> Animation env st a -> IO a
 runAnimation env st action = evalStateT (runReaderT action env) st
+
+data UserInput
+  = MoveLeft
+  | MoveRight
+  | Pause
+  | Stop
+  | Start
+
+data GameStatus
+  = Paused
+  | Playing
+  | Stopped
+  deriving (Show, Eq)

@@ -3,18 +3,16 @@ module Animation.State where
 import           Control.Monad.Trans.Class        (lift)
 import           Control.Monad.Trans.Reader       (ask)
 import           Control.Monad.Trans.State.Strict (get, put)
+import           Data.IORef
 
 import           Animation.Env                    (Env (..))
-import           Animation.Type                   (Animation)
+import           Animation.Type                   (Animation, GameStatus (..),
+                                                   UserInput (..))
 
 data Direction
   = Positive
   | Negative
   | Neutral
-
-data UserInput
-  = Left
-  | Right
 
 data Brick =
   Brick
@@ -38,34 +36,95 @@ data St =
     { position     :: (Int, Int)
     , direction    :: (Direction, Direction)
     , bXPosition   :: Int
-    , baseMovement :: Direction
     , bricks       :: [Brick]
     , numberDeaths :: Int
+    , status       :: GameStatus
     }
 
+-- TODO MODIFY BRICK GENERATION
 defaultBrickList :: [Brick]
-defaultBrickList = [Brick (5, 5) 1, Brick (6, 5) 2, Brick (6, 6) 3]
+defaultBrickList =
+  [ Brick (5, 5) 1
+  , Brick (6, 5) 2
+  , Brick (6, 6) 3
+  , Brick (7, 7) 3
+  , Brick (9, 8) 2
+  , Brick (10, 1) 2
+  , Brick (6, 4) 2
+  , Brick (11, 15) 2
+  , Brick (4, 1) 2
+  , Brick (1, 1) 2
+  , Brick (1, 2) 2
+  , Brick (1, 3) 2
+  , Brick (1, 4) 2
+  , Brick (1, 5) 2
+  ]
 
 defaultSt :: St
-defaultSt = St (0, 0) (Neutral, Neutral) 0 Neutral defaultBrickList 0
+defaultSt = St (0, 0) (Neutral, Neutral) 0 defaultBrickList 0 Stopped
+
+pullUserInput :: IORef [UserInput] -> IO (Maybe UserInput)
+pullUserInput x = do
+  listOfUserInputs <- readIORef x
+  if null listOfUserInputs
+    then return Nothing
+    else do
+      let mostAncient = head listOfUserInputs
+      writeIORef x (tail listOfUserInputs)
+      return (Just mostAncient)
 
 next :: Animation Env St ()
 next = do
   env <- ask
+  input <- lift $ lift (pullUserInput (userInputReference env))
   prevSt <- lift get
-  lift (put (nextInternal env prevSt))
+  lift (put (nextInternal env input prevSt))
 
-nextInternal :: Env -> St -> St
-nextInternal (Env (width, height) velocity baselength) (St (prevX, prevY) (prevXDir, prevYDir) prevBXPos prevMov prevBricks prevNbDeath) =
-  St
-    { position = (newX, newY)
-    , direction = (newXDir, newYDir)
-    , bXPosition = newBXPos
-    , baseMovement = newMov
-    , bricks = newBricks
-    , numberDeaths = newNbDeath
-    }
+nextInternal :: Env -> Maybe UserInput -> St -> St
+nextInternal (Env (width, height) velocity baselength _) userInput prevSt@(St (prevX, prevY) (prevXDir, prevYDir) prevBXPos prevBricks prevNbDeath prevStatus) =
+  case prevStatus of
+    Paused ->
+      case userInput of
+        Just Start -> prevSt {status = Playing}
+        Just Stop  -> prevSt {status = Stopped}
+        _          -> prevSt
+    Stopped ->
+      case userInput of
+        Just Start -> prevSt {status = Playing}
+        _          -> prevSt
+    Playing ->
+      case userInput of
+        Just Stop -> prevSt {status = Stopped}
+        Just Pause -> prevSt {status = Paused}
+        Just MoveLeft ->
+          St
+            { position = (newX, newY)
+            , direction = (newXDir, newYDir)
+            , bXPosition = newBXPosition (-1)
+            , bricks = newBricks
+            , numberDeaths = newNbDeath
+            , status = newStatus
+            }
+        Just MoveRight ->
+          St
+            { position = (newX, newY)
+            , direction = (newXDir, newYDir)
+            , bXPosition = newBXPosition 1
+            , bricks = newBricks
+            , numberDeaths = newNbDeath
+            , status = newStatus
+            }
+        _ ->
+          St
+            { position = (newX, newY)
+            , direction = (newXDir, newYDir)
+            , bXPosition = newBXPosition 0
+            , bricks = newBricks
+            , numberDeaths = newNbDeath
+            , status = newStatus
+            }
   where
+    newStatus = Playing
     ballInBottom =
       if prevY == height
         then 1
@@ -73,7 +132,8 @@ nextInternal (Env (width, height) velocity baselength) (St (prevX, prevY) (prevX
     newNbDeath = prevNbDeath + ballInBottom
     newXUnbounded = prevX + directionToMultiplier prevXDir * velocity
     newYUnbounded = prevY + directionToMultiplier prevYDir * velocity
-    baseCollision = newBXPos <= newX && ((newBXPos + baselength) >= newX)
+    baseCollision =
+      bXPosition prevSt <= newX && ((bXPosition prevSt + baselength) >= newX)
     brickCollisionY =
       elem (newX, newYUnbounded + directionToMultiplier prevYDir) $
       map brickPosition prevBricks
@@ -116,22 +176,13 @@ nextInternal (Env (width, height) velocity baselength) (St (prevX, prevY) (prevX
           if newYUnbounded <= 0 || brickCollisionY
             then Positive
             else Negative
-    newBXPos =
-      case prevMov of
-        Neutral  -> prevBXPos
-        Positive -> prevBXPos + 1
-        Negative -> prevBXPos - 1
-    newMov =
-      case prevMov of
-        Neutral -> Neutral
-        Positive ->
-          if (prevBXPos + baselength) < (width - 1)
-            then Positive
-            else Negative
-        Negative ->
-          if prevBXPos > 1
-            then Negative
-            else Positive
+    newBXPosition i =
+      let newBxPos = prevBXPos + i
+       in if newBxPos > width
+            then width
+            else if newBxPos < 0
+                   then 0
+                   else newBxPos
     newBricks
       | brickCollisionY =
         let filterCond =

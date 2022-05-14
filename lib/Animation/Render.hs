@@ -6,7 +6,7 @@ import           Control.Monad.Trans.State.Strict (get, put)
 
 import           Animation.Env                    (Env (..))
 import           Animation.State                  (Brick (..), St (..))
-import           Animation.Type                   (Animation)
+import           Animation.Type                   (Animation, GameStatus (..))
 import           Data.Char                        (intToDigit)
 
 data Object
@@ -14,6 +14,7 @@ data Object
             -- | Brick Int
   | Base Int Int
 
+-- | Method used to render the board
 render :: Animation Env St ()
 render = do
   val <- renderVal
@@ -34,7 +35,9 @@ renderInternal env st =
     (position st)
     (bricks st)
     (numberDeaths st)
+    (status st)
 
+-- | Method used to make every lines of the board
 makeLine ::
      Char -> Char -> Int -> Maybe Object -> Maybe Object -> [Brick] -> String
 makeLine endChar innerChar i mb mba bricks =
@@ -72,22 +75,22 @@ makeLine endChar innerChar i mb mba bricks =
       intToDigit $
       head $ map (life) $ filter ((==) z . fst . brickPosition) bricks
 
-makeBox :: (Int, Int) -> Int -> Int -> (Int, Int) -> [Brick] -> Int -> String
-makeBox (numRows, numCols) baseL baseX (ballX, ballY) bricks nbDeaths =
+-- | Method used to render the box
+makeBox ::
+     (Int, Int)
+  -> Int
+  -> Int
+  -> (Int, Int)
+  -> [Brick]
+  -> Int
+  -> GameStatus
+  -> String
+makeBox (numRows, numCols) baseL baseX (ballX, ballY) bricks score status =
   unlines
     ([makeLine '-' '-' numRows Nothing Nothing []] ++
      mappedPositions ++
      [makeLine '-' '-' numRows Nothing Nothing []] ++
-     [ "BaseX: " ++
-       show (baseX + div baseL 2) ++
-       " | Ball: (" ++
-       show ballX ++
-       "," ++
-       show ballY ++
-       ") | BallOverBase: " ++
-       show (ballX >= baseX && (ballX <= (baseX + baseL))) ++
-       " | Number of deaths: " ++ show nbDeaths
-     ])
+     ["Score: " ++ show score ++ " | Status: " ++ show status])
   where
     positions = [0 .. numCols]
     mappedPositions = map lineMaker positions
