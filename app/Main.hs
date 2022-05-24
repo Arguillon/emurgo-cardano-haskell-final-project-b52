@@ -24,7 +24,7 @@ putInitialState = do
   dirX <- lift $ lift $ fmap directionFromInt $ randomRIO (1, 2)
   dirY <- lift $ lift $ fmap directionFromInt $ randomRIO (1, 2)
   randNumBlocks <-
-    let maxDesiredBlocks = div (width * (height - 4)) (bricklength * 4)
+    let maxDesiredBlocks = 3
      in lift $ lift $ randomRIO (0, maxDesiredBlocks)
   randDistBlocks <-
     sequence $

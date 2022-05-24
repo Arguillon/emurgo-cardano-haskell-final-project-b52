@@ -21,6 +21,7 @@ data GameStatus
   | Playing
   | Stopped
   | LevelComplete
+  | GameOver
   | Restarted
   deriving (Show) -- , Eq)
 

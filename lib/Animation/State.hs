@@ -115,6 +115,10 @@ nextInternal (Env (width, height) velocity baselength bricklength _ _) userInput
       case userInput of
         Just Restart -> prevSt {status = Restarted}
         _            -> prevSt
+    GameOver ->
+      case userInput of
+        Just Restart -> prevSt {status = Restarted}
+        _            -> prevSt
     Playing ->
       if prevBricks /= []
         then case userInput of
@@ -172,9 +176,9 @@ nextInternal (Env (width, height) velocity baselength bricklength _ _) userInput
       head .
       filter
         (\u ->
-           (snd target == snd (brickPosition u)) &&
-           (fst target - fst (brickPosition u) < bricklength) &&
-           (fst target - fst (brickPosition u) >= 0))
+           snd target == snd (brickPosition u) &&
+           (fst target - fst (brickPosition u)) < bricklength &&
+           (fst target - fst (brickPosition u)) >= 0)
     newX =
       case prevXDir of
         Neutral  -> newXUnbounded
@@ -219,7 +223,7 @@ nextInternal (Env (width, height) velocity baselength bricklength _ _) userInput
     newStatus =
       if newY /= height
         then Playing
-        else Stopped
+        else GameOver
     newPoints =
       (+) prevPoints $
       fromEnum $ brickCollisionY || brickCollisionX || cornerCollision

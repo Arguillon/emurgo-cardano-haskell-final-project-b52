@@ -70,7 +70,7 @@ makeLine endChar innerChar i mb mba bricks bricklength =
     printBlock x =
       if x `elem`
          foldl (\u v -> u ++ [v .. (v + bricklength - 1)]) [] brickXPositions
-        then if life $ pixelOwner x > 0
+        then if life (pixelOwner x) > 0
                then '='
                else '-'
         else innerChar
@@ -98,16 +98,12 @@ makeBox (numRows, numCols) baseL baseX (ballX, ballY) bricklength bricks status 
      [" "] ++
      case status of
        LevelComplete -> [celebratrionCartoon]
+       GameOver -> [gameOverCartoon]
        _ ->
          [makeLine '-' '-' numRows Nothing Nothing [] bricklength] ++
          mappedPositions ++
          [makeLine '-' '-' numRows Nothing Nothing [] bricklength] ++
-         [ "Status: " ++
-           show status ++
-           if ballY /= numCols
-             then " | Score: " ++ show points
-             else " | ***** GAME OVER ***** | Your Score is " ++ show points
-         ] ++ -- Define menu according to status
+         ["Status: " ++ show status ++ " | Score: " ++ show points] ++ -- Define menu according to status
          [ case status of
              Stopped -> "Press (R) to Restart"
              Paused  -> "Press (S) to Play | Controls: (A) Left / (D) Right"
@@ -189,3 +185,30 @@ makeBox (numRows, numCols) baseL baseX (ballX, ballY) bricklength bricks status 
       "\n      I am not done yet!          `.  ` '.  :" ++
       "\n                                    `  : : /" ++
       "\n                                     `':/ `"
+    gameOverCartoon =
+      "┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼" ++
+      "\n███▀▀▀██┼███▀▀▀███┼███▀█▄█▀███┼██▀▀▀" ++
+      "\n██┼┼┼┼██┼██┼┼┼┼┼██┼██┼┼┼█┼┼┼██┼██┼┼┼" ++
+      "\n██┼┼┼▄▄▄┼██▄▄▄▄▄██┼██┼┼┼▀┼┼┼██┼██▀▀▀" ++
+      "\n██┼┼┼┼██┼██┼┼┼┼┼██┼██┼┼┼┼┼┼┼██┼██┼┼┼" ++
+      "\n███▄▄▄██┼██┼┼┼┼┼██┼██┼┼┼┼┼┼┼██┼██▄▄▄" ++
+      "\n┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼" ++
+      "\n███▀▀▀███┼▀███┼┼██▀┼██▀▀▀┼██▀▀▀▀██▄┼" ++
+      "\n██┼┼┼┼┼██┼┼┼██┼┼██┼┼██┼┼┼┼██┼┼┼┼┼██┼" ++
+      "\n██┼┼┼┼┼██┼┼┼██┼┼██┼┼██▀▀▀┼██▄▄▄▄▄▀▀┼" ++
+      "\n██┼┼┼┼┼██┼┼┼██┼┼█▀┼┼██┼┼┼┼██┼┼┼┼┼██┼" ++
+      "\n███▄▄▄███┼┼┼─▀█▀┼┼─┼██▄▄▄┼██┼┼┼┼┼██▄" ++
+      "\n┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼" ++
+      "\n┼┼┼┼┼┼┼┼██┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼██┼┼┼┼┼┼┼┼┼" ++
+      "\n┼┼┼┼┼┼████▄┼┼┼▄▄▄▄▄▄▄┼┼┼▄████┼┼┼┼┼┼┼" ++
+      "\n┼┼┼┼┼┼┼┼┼▀▀█▄█████████▄█▀▀┼┼┼┼┼┼┼┼┼┼" ++
+      "\n┼┼┼┼┼┼┼┼┼┼┼█████████████┼┼┼┼┼┼┼┼┼┼┼┼" ++
+      "\n┼┼┼┼┼┼┼┼┼┼┼██▀▀▀███▀▀▀██┼┼┼┼┼┼┼┼┼┼┼┼" ++
+      "\n┼┼┼┼┼┼┼┼┼┼┼██┼┼┼███┼┼┼██┼┼┼┼┼┼┼┼┼┼┼┼" ++
+      "\n┼┼┼┼┼┼┼┼┼┼┼█████▀▄▀█████┼┼┼┼┼┼┼┼┼┼┼┼" ++
+      "\n┼┼┼┼┼┼┼┼┼┼┼┼███████████┼┼┼┼┼┼┼┼┼┼┼┼┼" ++
+      "\n┼┼┼┼┼┼┼┼▄▄▄██┼┼█▀█▀█┼┼██▄▄▄┼┼┼┼┼┼┼┼┼" ++
+      "\n┼┼┼┼┼┼┼┼▀▀██┼┼┼┼┼┼┼┼┼┼┼██▀▀┼┼┼┼┼┼┼┼┼" ++
+      "\n┼┼┼┼┼┼┼┼┼┼▀▀┼┼┼┼┼┼┼┼┼┼┼▀▀┼┼┼┼┼┼┼┼┼┼┼" ++
+      "\n┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼" ++
+      "\n     Retry Level - Press SPACE"
