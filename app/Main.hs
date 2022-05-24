@@ -2,42 +2,53 @@ module Main where
 
 import           Animation                        (Animation, Direction (..),
                                                    Env (..), St (..),
-                                                   UserInput (..),
+                                                   bricksInPlace,
                                                    defaultBrickList, defaultEnv,
                                                    defaultSt, directionFromInt,
                                                    next, render, runAnimation)
 
 import           Control.Concurrent               (threadDelay)
-import           Data.IORef
 import           System.Random                    (randomRIO)
 
+import           Animation.Type                   (GameStatus (..))
 import           Control.Monad.Trans.Class        (lift)
 import           Control.Monad.Trans.Reader       (ask)
 import           Control.Monad.Trans.State.Strict (get, put)
+import           Data.IORef
 
 putInitialState :: Animation Env St ()
 putInitialState = do
-  (Env (width, height) _ baselength _) <- ask
-  posX <- lift $ lift $ randomRIO (0, width)
-  posY <- lift $ lift $ randomRIO (0, height)
+  (Env (width, height) _ baselength bricklength _ _) <- ask
+  posX <- lift $ lift $ randomRIO (div width 3, (*) 2 $ div width 3)
+  posY <- lift $ lift $ randomRIO (div height 3, (*) 2 $ div height 3)
   dirX <- lift $ lift $ fmap directionFromInt $ randomRIO (1, 2)
   dirY <- lift $ lift $ fmap directionFromInt $ randomRIO (1, 2)
+  randNumBlocks <-
+    let maxDesiredBlocks = div (width * (height - 4)) (bricklength * 4)
+     in lift $ lift $ randomRIO (0, maxDesiredBlocks)
+  randDistBlocks <-
+    sequence $
+    replicate randNumBlocks $ randomRIO (1, (width * (height - 4)) :: Int)
   lift $
     put $
-    defaultSt
-      { position = (div width 2, div height 2)
-      , direction = (Positive, Positive)
-      , bXPosition = div (width - baselength) 3
-      }
+    St
+      (posX, posY)
+      (dirX, dirY)
+      (div (width - baselength) 2)
+      (bricksInPlace width randDistBlocks 1)
+      0
+      Paused
 
 animate :: Animation Env St ()
 animate = do
   render
-  next
-  lift $ lift $ threadDelay 500000
+  event <- lift get
+  case status event of
+    Restarted -> putInitialState
+    _         -> next
+  lift $ lift $ threadDelay 200000
   animate
 
---  render
 mainAnimation :: Animation Env St ()
 mainAnimation = do
   putInitialState
@@ -45,7 +56,4 @@ mainAnimation = do
 
 main :: IO ()
 main = do
-  ref <-
-    newIORef
-      [Start, MoveRight, MoveRight, MoveRight, MoveRight, MoveRight, Stop]
-  runAnimation (defaultEnv {userInputReference = ref}) defaultSt mainAnimation
+  runAnimation defaultEnv defaultSt mainAnimation

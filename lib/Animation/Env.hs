@@ -1,22 +1,27 @@
 module Animation.Env where
 
-import           Animation.Type             (UserInput (..))
-import           Control.Monad.Trans.Reader (ask)
-import           Data.IORef
+-- import Data.IORef
+import           Animation.Type (UserInput (..))
 
 data Env =
   Env
-    { size               :: (Int, Int)
-    , velocity           :: Int
-    , baselength         :: Int
-    , userInputReference :: IORef [UserInput]
+    { size        :: (Int, Int)
+    , velocity    :: Int
+    , baselength  :: Int
+    , bricklength :: Int
+    , numOfBricks :: Int
+    , posOfBricks :: [Int]
     }
 
+--      , userInputReference :: IORef [UserInput]
 defaultEnv :: Env
 defaultEnv =
   Env
-    { size = (20, 10)
+    { size = (50, 20)
     , velocity = 1
-    , baselength = 3
-    , userInputReference = error "input reference not initialized"
+    , baselength = 10
+    , bricklength = 3
+    , numOfBricks = 0
+    , posOfBricks = []
+--      , userInputReference = error "input reference not initialized"
     }

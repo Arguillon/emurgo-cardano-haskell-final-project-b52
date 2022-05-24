@@ -32,7 +32,6 @@ library
                      Animation.Env
                      Animation.Type
                      Animation
-
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:
     build-depends:    base
@@ -50,8 +49,8 @@ executable animation
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:
     build-depends:    base
-                    , finale
                     , random
+                    , finale
                     , transformers
     hs-source-dirs:   app
     default-language: Haskell2010
