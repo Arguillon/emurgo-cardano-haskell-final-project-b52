@@ -3,6 +3,12 @@ module Animation.Env where
 -- import Data.IORef
 import           Animation.Type (UserInput (..))
 
+-- An environment is defined as :
+-- Size of the box of the game
+-- Velocity of the ball
+-- Base length of bricks
+-- Total number of bricks
+-- Position of bricks
 data Env =
   Env
     { size        :: (Int, Int)
@@ -13,7 +19,6 @@ data Env =
     , posOfBricks :: [Int]
     }
 
---      , userInputReference :: IORef [UserInput]
 defaultEnv :: Env
 defaultEnv =
   Env
@@ -23,5 +28,4 @@ defaultEnv =
     , bricklength = 3
     , numOfBricks = 0
     , posOfBricks = []
---      , userInputReference = error "input reference not initialized"
     }

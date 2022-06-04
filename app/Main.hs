@@ -16,6 +16,9 @@ import           Control.Monad.Trans.Reader       (ask)
 import           Control.Monad.Trans.State.Strict (get, put)
 import           Data.IORef
 
+-- Function tu put the initial state
+-- Takes the default animation, environment and state
+-- It is here that you can define the number of bricks
 putInitialState :: Animation Env St ()
 putInitialState = do
   (Env (width, height) _ baselength bricklength _ _) <- ask
@@ -24,7 +27,7 @@ putInitialState = do
   dirX <- lift $ lift $ fmap directionFromInt $ randomRIO (1, 2)
   dirY <- lift $ lift $ fmap directionFromInt $ randomRIO (1, 2)
   randNumBlocks <-
-    let maxDesiredBlocks = 3
+    let maxDesiredBlocks = 4
      in lift $ lift $ randomRIO (0, maxDesiredBlocks)
   randDistBlocks <-
     sequence $
