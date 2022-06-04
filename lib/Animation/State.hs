@@ -57,15 +57,6 @@ bricksInPlace width positions life =
 defaultSt :: St
 defaultSt = St (0, 0) (Neutral, Neutral) 0 defaultBrickList 0 Stopped
 
--- pullUserInput :: IORef [UserInput] -> IO (Maybe UserInput)
--- pullUserInput x = do
---  listOfUserInputs <- readIORef x
---  if null listOfUserInputs
---    then return Nothing
---    else do
---      let mostAncient = head listOfUserInputs
---      writeIORef x (tail listOfUserInputs)
---      return (Just mostAncient)
 getUserInput :: IO (Maybe UserInput)
 getUserInput = go Nothing
   where
