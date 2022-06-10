@@ -36,9 +36,3 @@ Week 5
 — presentation
 
 
-
-14/05/2022
-
-Correct all the bugs -> bar is not visible when ball is on the same line 
-Take user input and update io ref on other thread (thread safe) -> Fork io
-capture user input from the keyboard
