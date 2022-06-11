@@ -2,6 +2,11 @@
 Finale Haskell project for EMURGO Batch 52
 The goal is to make a brick breaker game between 1st May and June 5th
 
+To play the game
+download the project
+cabal build
+cabal run
+
 This is the flow we need to follow for the project:
 
 Week 1 
